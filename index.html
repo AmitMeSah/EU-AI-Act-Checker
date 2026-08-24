@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EU AI Act — Risk Self-Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12172A;
+    --surface:#1B2340;
+    --surface-2:#232C4E;
+    --border:#33406B;
+    --text:#EDEAE0;
+    --text-dim:#A6ABC4;
+    --brass:#C9A227;
+    --prohibited:#C0392B;
+    --high:#D98A29;
+    --limited:#4A7FB5;
+    --minimal:#4F9D69;
+    --review:#8B6FB3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:32px 20px 80px;}
+  header{margin-bottom:32px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(28px,6vw,40px);
+    line-height:1.1;
+    margin:0 0 12px;
+  }
+  .sub{color:var(--text-dim);font-size:15px;max-width:52ch;}
+  textarea{
+    width:100%;
+    min-height:120px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    padding:14px;
+    resize:vertical;
+  }
+  textarea:focus{outline:2px solid var(--brass);outline-offset:1px;}
+  .actions{display:flex;gap:10px;margin-top:14px;align-items:center;}
+  button{
+    background:var(--brass);
+    color:#1B1400;
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:11px 22px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  button:hover{filter:brightness(1.08);}
+  button:disabled{opacity:0.5;cursor:not-allowed;}
+  .clear-btn{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--border);
+    font-weight:500;
+  }
+  .clear-btn:hover{color:var(--text);border-color:var(--text-dim);}
+
+  #trace{
+    margin-top:28px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:16px 18px;
+    display:none;
+  }
+  .trace-line{
+    color:var(--text-dim);
+    opacity:0;
+    animation:fadeIn 0.25s forwards;
+    padding:2px 0;
+  }
+  .trace-line.hit{color:var(--brass);}
+  @keyframes fadeIn{to{opacity:1;}}
+
+  #result{margin-top:20px;display:none;}
+  .badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:5px 12px;
+    border-radius:4px;
+    font-weight:500;
+    margin-bottom:14px;
+  }
+  .badge.PROHIBITED{background:rgba(192,57,43,0.18);color:var(--prohibited);border:1px solid var(--prohibited);}
+  .badge.HIGH{background:rgba(217,138,41,0.18);color:var(--high);border:1px solid var(--high);}
+  .badge.LIMITED{background:rgba(74,127,181,0.18);color:var(--limited);border:1px solid var(--limited);}
+  .badge.MINIMAL{background:rgba(79,157,105,0.18);color:var(--minimal);border:1px solid var(--minimal);}
+  .badge.REVIEW{background:rgba(139,111,179,0.18);color:var(--review);border:1px solid var(--review);}
+
+  .result-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:4px solid var(--brass);
+    border-radius:6px;
+    padding:22px;
+  }
+  .result-card.PROHIBITED{border-left-color:var(--prohibited);}
+  .result-card.HIGH{border-left-color:var(--high);}
+  .result-card.LIMITED{border-left-color:var(--limited);}
+  .result-card.MINIMAL{border-left-color:var(--minimal);}
+  .result-card.REVIEW{border-left-color:var(--review);}
+
+  .tier-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:0 0 8px;}
+  .rule-cite{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:12px;}
+  .reasoning{font-size:14.5px;color:var(--text);}
+  .disclaimer{
+    margin-top:20px;
+    font-size:12.5px;
+    color:var(--text-dim);
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+  footer{margin-top:60px;font-size:12px;color:var(--text-dim);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Article 5 / Article 6 / Annex III / Article 50</div>
+    <h1>EU AI Act<br>Risk Self-Assessment</h1>
+    <p class="sub">Describe your AI use case in plain language. The tool walks the Act's decision tree and flags the likely risk tier — with citations, not just a label.</p>
+  </header>
+
+  <textarea id="input" placeholder="e.g. An AI system that screens job applicant CVs and ranks candidates for interview..."></textarea>
+  <div class="actions">
+    <button id="assessBtn">Assess use case</button>
+    <button id="clearBtn" class="clear-btn">Clear</button>
+  </div>
+
+  <div id="trace"></div>
+  <div id="result"></div>
+
+  <footer>Not legal advice. A heuristic keyword-based screen against the EU AI Act's public criteria — always confirm with qualified counsel before relying on a classification.</footer>
+</div>
+
+<script>
+let RULES = null;
+
+async function loadRules(){
+  const res = await fetch('rules.json');
+  RULES = await res.json();
+}
+loadRules().catch(()=>{
+  document.getElementById('trace').style.display = 'block';
+  document.getElementById('trace').innerHTML = '<div class="trace-line hit">⚠ Could not load rules.json — make sure it sits next to index.html and the page is served over http(s), not opened directly as a file.</div>';
+});
+
+function matchGroup(text, group){
+  for(const rule of group){
+    for(const kw of rule.kw){
+      if(text.includes(kw)) return rule;
+    }
+  }
+  return null;
+}
+
+function assess(){
+  if(!RULES){ alert('Rules are still loading — try again in a second.'); return; }
+  const raw = document.getElementById('input').value.trim();
+  if(!raw){ return; }
+  const text = raw.toLowerCase();
+
+  const traceEl = document.getElementById('trace');
+  const resultEl = document.getElementById('result');
+  traceEl.innerHTML = '';
+  resultEl.innerHTML = '';
+  traceEl.style.display = 'block';
+  resultEl.style.display = 'none';
+
+  const lines = [];
+  let outcome = null;
+
+  // Tier 1
+  lines.push({text:'> checking Article 5 — prohibited practices (P1–P8)...', hit:false});
+  const p = matchGroup(text, RULES.prohibited);
+  if(p){
+    lines.push({text:`  ✗ match: ${p.id} — ${p.label}`, hit:true});
+    outcome = { tier:'PROHIBITED', cite:`Article 5 — Rule ${p.id}`, label:p.label,
+      reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.' };
+  } else {
+    lines.push({text:'  no match', hit:false});
+
+    // Tier 2 Path A
+    lines.push({text:'> checking Article 6(1) — product safety component...', hit:false});
+    const a = matchGroup(text, RULES.highRiskPathA);
+    if(a){
+      lines.push({text:`  ✓ match: ${a.id} — ${a.label}`, hit:true});
+      outcome = { tier:'HIGH', cite:`Article 6(1) — ${a.id}`, label:a.label,
+        reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.' };
+    } else {
+      lines.push({text:'  no match', hit:false});
+
+      // Tier 2 Path B
+      lines.push({text:'> checking Annex III — high-risk domains (H1–H8)...', hit:false});
+      const h = matchGroup(text, RULES.highRiskAnnexIII);
+      if(h){
+        lines.push({text:`  ✓ match: ${h.id} — ${h.label}`, hit:true});
+        outcome = { tier:'HIGH', cite:`Annex III — ${h.id}`, label:h.label,
+          reasoning:'This use case falls into an Annex III high-risk domain. Check the narrow procedural-task carve-out — if it only performs a limited preparatory function without profiling individuals, it may be exempt. Otherwise expect conformity assessment, human oversight, and documentation obligations.' };
+      } else {
+        lines.push({text:'  no match', hit:false});
+
+        // Tier 3
+        lines.push({text:'> checking Article 50 — transparency triggers (L1–L4)...', hit:false});
+        const l = matchGroup(text, RULES.limited);
+        if(l){
+          lines.push({text:`  ✓ match: ${l.id} — ${l.label}`, hit:true});
+          outcome = { tier:'LIMITED', cite:`Article 50 — ${l.id}`, label:l.label,
+            reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.' };
+        } else {
+          lines.push({text:'  no match', hit:false});
+          const signal = RULES.reviewSignals.find(s => text.includes(s));
+          if(signal){
+            lines.push({text:`> no specific rule matched, but flagged term detected: "${signal}"`, hit:true});
+            outcome = { tier:'REVIEW', cite:'No exact rule match — ambiguous signal term detected', label:`Contains "${signal}"`,
+              reasoning:'This description touches language associated with biometrics, tracking, or profiling, but didn\'t cleanly match a specific Article 5, Annex III, or Article 50 rule as worded. Rather than default to Minimal Risk, this needs a manual check: add detail on data type, context (public/private), and whether individuals are identified or profiled, then re-run.' };
+          } else {
+            lines.push({text:'> no tier matched — default classification applies', hit:false});
+            outcome = { tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
+              reasoning:'Based on the description given, no prohibited, high-risk, transparency-trigger, or ambiguous risk-signal terms were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.' };
+          }
+        }
+      }
+    }
+  }
+
+  lines.forEach((l,i)=>{
+    const div = document.createElement('div');
+    div.className = 'trace-line' + (l.hit ? ' hit':'');
+    div.textContent = l.text;
+    div.style.animationDelay = (i*80)+'ms';
+    traceEl.appendChild(div);
+  });
+
+  setTimeout(()=>{
+    const tierClass = outcome.tier;
+    const tierName = {PROHIBITED:'Prohibited', HIGH:'High-Risk', LIMITED:'Limited Risk', MINIMAL:'Minimal Risk', REVIEW:'Needs Review'}[tierClass];
+    resultEl.innerHTML = `
+      <div class="result-card ${tierClass}">
+        <span class="badge ${tierClass}">${tierClass}</span>
+        <h2 class="tier-title">${tierName}</h2>
+        <div class="rule-cite">${outcome.cite} — matched: "${outcome.label}"</div>
+        <div class="reasoning">${outcome.reasoning}</div>
+        <div class="disclaimer">This is a heuristic keyword screen against the eu-ai-act-rules.md rule set, not a legal determination. Borderline or multi-domain use cases should be reviewed manually against the full Annex III carve-outs.</div>
+      </div>`;
+    resultEl.style.display = 'block';
+  }, lines.length*80 + 200);
+}
+
+document.getElementById('assessBtn').addEventListener('click', assess);
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  document.getElementById('input').value='';
+  document.getElementById('trace').style.display='none';
+  document.getElementById('result').style.display='none';
+});
+document.getElementById('input').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && e.metaKey) assess();
+});
+</script>
+</body>
+</html>
