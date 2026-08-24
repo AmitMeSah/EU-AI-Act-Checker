@@ -183,6 +183,11 @@ function matchGroup(text, group){
     for(const kw of rule.kw){
       if(text.includes(kw)) return rule;
     }
+    if(rule.any){
+      for(const wordSet of rule.any){
+        if(wordSet.every(word => text.includes(word))) return rule;
+      }
+    }
   }
   return null;
 }
