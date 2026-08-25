@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EU AI Act — Risk Self-Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12172A;
+    --surface:#1B2340;
+    --surface-2:#232C4E;
+    --border:#33406B;
+    --text:#EDEAE0;
+    --text-dim:#A6ABC4;
+    --brass:#C9A227;
+    --prohibited:#C0392B;
+    --high:#D98A29;
+    --limited:#4A7FB5;
+    --minimal:#4F9D69;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:32px 20px 80px;}
+  header{margin-bottom:28px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:clamp(28px,6vw,40px);
+    line-height:1.1;
+    margin:0 0 12px;
+  }
+  .sub{color:var(--text-dim);font-size:15px;max-width:52ch;}
+
+  .progress{display:flex;gap:6px;margin:22px 0;}
+  .progress-dot{height:4px;flex:1;background:var(--border);border-radius:2px;overflow:hidden;position:relative;}
+  .progress-dot.done{background:var(--brass);}
+  .progress-dot.active::after{content:'';position:absolute;inset:0;background:var(--brass);width:50%;}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:24px 22px;
+  }
+  .q-title{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin:0 0 4px;line-height:1.35;}
+  .q-cite{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);margin-bottom:18px;letter-spacing:0.02em;}
+
+  .option-list{display:flex;flex-direction:column;gap:8px;}
+  .option{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:12px 14px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--surface-2);
+    cursor:pointer;
+    font-size:14.5px;
+    transition:border-color 0.15s;
+  }
+  .option:hover{border-color:var(--brass);}
+  .option input{margin-top:2px;accent-color:var(--brass);cursor:pointer;flex-shrink:0;}
+  .option label{cursor:pointer;}
+
+  select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    padding:12px 14px;
+    border-radius:6px;
+  }
+
+  .yn-row{display:flex;gap:10px;}
+  .yn-btn{
+    flex:1;
+    padding:14px;
+    border-radius:6px;
+    border:1px solid var(--border);
+    background:var(--surface-2);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    cursor:pointer;
+  }
+  .yn-btn:hover{border-color:var(--brass);}
+  .yn-btn.chosen{border-color:var(--brass);background:rgba(201,162,39,0.14);}
+
+  .actions{display:flex;gap:10px;margin-top:20px;}
+  button.next{
+    background:var(--brass);
+    color:#1B1400;
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:11px 22px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  button.next:disabled{opacity:0.4;cursor:not-allowed;}
+  button.back{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--border);
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:14px;
+    padding:11px 18px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  button.back:hover{color:var(--text);border-color:var(--text-dim);}
+  button.restart{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--border);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+
+  #trace{
+    margin-top:22px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  #trace .t-hit{color:var(--brass);}
+
+  #result{margin-top:8px;}
+  .badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:5px 12px;
+    border-radius:4px;
+    font-weight:500;
+    margin-bottom:14px;
+  }
+  .badge.PROHIBITED{background:rgba(192,57,43,0.18);color:var(--prohibited);border:1px solid var(--prohibited);}
+  .badge.HIGH{background:rgba(217,138,41,0.18);color:var(--high);border:1px solid var(--high);}
+  .badge.LIMITED{background:rgba(74,127,181,0.18);color:var(--limited);border:1px solid var(--limited);}
+  .badge.MINIMAL{background:rgba(79,157,105,0.18);color:var(--minimal);border:1px solid var(--minimal);}
+
+  .result-card{border-left:4px solid var(--brass);}
+  .result-card.PROHIBITED{border-left-color:var(--prohibited);}
+  .result-card.HIGH{border-left-color:var(--high);}
+  .result-card.LIMITED{border-left-color:var(--limited);}
+  .result-card.MINIMAL{border-left-color:var(--minimal);}
+
+  .tier-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:0 0 8px;}
+  .rule-cite{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:12px;}
+  .reasoning{font-size:14.5px;color:var(--text);}
+  .disclaimer{
+    margin-top:20px;
+    font-size:12.5px;
+    color:var(--text-dim);
+    border-top:1px solid var(--border);
+    padding-top:14px;
+  }
+  footer{margin-top:50px;font-size:12px;color:var(--text-dim);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Article 5 / Article 6 / Annex III / Article 50</div>
+    <h1>EU AI Act<br>Risk Self-Assessment</h1>
+    <p class="sub">Answer a few questions about your AI system. The tool walks the Act's actual decision tree and flags the likely risk tier — with citations.</p>
+  </header>
+
+  <div class="progress" id="progress"></div>
+  <div id="stepContainer" class="card"></div>
+  <div id="trace"></div>
+  <div id="result"></div>
+
+  <footer>Not legal advice. A structured screen against the EU AI Act's public criteria — always confirm with qualified counsel before relying on a classification.</footer>
+</div>
+
+<script>
+let WIZ = null;
+const STEPS = ['prohibited','safety','domain','carveout','transparency','result'];
+let stepIndex = 0;
+let answers = { prohibited:{}, safety:null, domain:null, carveout:null, transparency:{} };
+
+fetch('wizard.json').then(r=>r.json()).then(data=>{ WIZ = data; render(); })
+  .catch(()=>{
+    document.getElementById('stepContainer').innerHTML = '<div class="q-title">⚠ Could not load wizard.json</div><div class="q-cite">Make sure it sits next to index.html and the page is served over http(s).</div>';
+  });
+
+function updateProgress(){
+  const el = document.getElementById('progress');
+  el.innerHTML = '';
+  const visibleSteps = STEPS.length - 1;
+  for(let i=0;i<visibleSteps;i++){
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i<stepIndex?' done':i===stepIndex?' active':'');
+    el.appendChild(dot);
+  }
+}
+
+function addTrace(text, hit){
+  const el = document.getElementById('trace');
+  const div = document.createElement('div');
+  div.textContent = text;
+  div.className = hit ? 't-hit' : '';
+  el.appendChild(div);
+}
+
+function goTo(idx){ stepIndex = idx; render(); }
+
+function render(){
+  if(!WIZ) return;
+  document.getElementById('result').innerHTML = '';
+  updateProgress();
+  const step = STEPS[stepIndex];
+  const c = document.getElementById('stepContainer');
+
+  if(step === 'prohibited'){
+    c.style.display = 'block';
+    c.innerHTML = `
+      <div class="q-title">Does the system do any of the following?</div>
+      <div class="q-cite">Article 5 — Prohibited Practices</div>
+      <div class="option-list">
+        ${WIZ.prohibited.map(p=>`
+          <div class="option">
+            <input type="checkbox" id="${p.id}" ${answers.prohibited[p.id]?'checked':''}>
+            <label for="${p.id}">${p.label}</label>
+          </div>`).join('')}
+      </div>
+      <div class="actions"><button class="next" id="nextBtn">Next</button></div>`;
+    WIZ.prohibited.forEach(p=>{
+      document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; });
+    });
+    document.getElementById('nextBtn').addEventListener('click', ()=>{
+      const hit = WIZ.prohibited.find(p=>answers.prohibited[p.id]);
+      if(hit){
+        addTrace('> Article 5 check: prohibited practice selected', true);
+        addTrace(`  match: ${hit.id} — ${hit.label}`, true);
+        finish({ tier:'PROHIBITED', cite:`${hit.cite} — Rule ${hit.id}`, label:hit.label,
+          reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.' });
+      } else {
+        addTrace('> Article 5 check: no prohibited practices selected', false);
+        goTo(1);
+      }
+    });
+  }
+
+  else if(step === 'safety'){
+    c.innerHTML = `
+      <div class="q-title">${WIZ.safetyComponent.label}</div>
+      <div class="q-cite">${WIZ.safetyComponent.cite}</div>
+      <div class="yn-row">
+        <button class="yn-btn" id="ynYes">Yes</button>
+        <button class="yn-btn" id="ynNo">No</button>
+      </div>
+      <div class="actions">
+        <button class="back" id="backBtn">Back</button>
+        <button class="next" id="nextBtn" disabled>Next</button>
+      </div>`;
+    setupYesNo('safety', v=>{
+      if(v){
+        addTrace('> Article 6(1) check: is a regulated product safety component', true);
+        finish({ tier:'HIGH', cite:WIZ.safetyComponent.cite, label:'Regulated product safety component',
+          reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.' });
+      } else {
+        addTrace('> Article 6(1) check: not a regulated safety component', false);
+        goTo(2);
+      }
+    });
+    document.getElementById('backBtn').addEventListener('click', ()=>goTo(0));
+  }
+
+  else if(step === 'domain'){
+    c.innerHTML = `
+      <div class="q-title">Which domain best describes this system's primary use?</div>
+      <div class="q-cite">Annex III</div>
+      <select id="domainSelect">
+        <option value="">— select —</option>
+        ${WIZ.domains.map(d=>`<option value="${d.id}">${d.label}</option>`).join('')}
+      </select>
+      <div class="actions">
+        <button class="back" id="backBtn">Back</button>
+        <button class="next" id="nextBtn" disabled>Next</button>
+      </div>`;
+    const sel = document.getElementById('domainSelect');
+    const nextBtn = document.getElementById('nextBtn');
+    if(answers.domain) sel.value = answers.domain;
+    nextBtn.disabled = !sel.value;
+    sel.addEventListener('change', ()=>{ answers.domain = sel.value; nextBtn.disabled = !sel.value; });
+    document.getElementById('backBtn').addEventListener('click', ()=>goTo(1));
+    nextBtn.addEventListener('click', ()=>{
+      if(answers.domain === 'NONE'){
+        addTrace('> Annex III check: no matching domain', false);
+        goTo(4);
+      } else {
+        const d = WIZ.domains.find(x=>x.id===answers.domain);
+        addTrace(`> Annex III check: domain selected — ${d.label}`, true);
+        goTo(3);
+      }
+    });
+  }
+
+  else if(step === 'carveout'){
+    c.innerHTML = `
+      <div class="q-title">${WIZ.carveout.label}</div>
+      <div class="q-cite">${WIZ.carveout.cite}</div>
+      <div class="yn-row">
+        <button class="yn-btn" id="ynYes">Yes</button>
+        <button class="yn-btn" id="ynNo">No</button>
+      </div>
+      <div class="actions">
+        <button class="back" id="backBtn">Back</button>
+        <button class="next" id="nextBtn" disabled>Next</button>
+      </div>`;
+    setupYesNo('carveout', v=>{
+      const d = WIZ.domains.find(x=>x.id===answers.domain);
+      if(v){
+        addTrace('> Article 6(3) carve-out: narrow procedural task, no profiling — continuing checks', false);
+        goTo(4);
+      } else {
+        addTrace('> Article 6(3) carve-out: does not apply', true);
+        finish({ tier:'HIGH', cite:d.cite, label:d.label,
+          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.' });
+      }
+    });
+    document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
+  }
+
+  else if(step === 'transparency'){
+    c.innerHTML = `
+      <div class="q-title">Does the system do any of the following?</div>
+      <div class="q-cite">Article 50 — Transparency Obligations</div>
+      <div class="option-list">
+        ${WIZ.transparency.map(t=>`
+          <div class="option">
+            <input type="checkbox" id="${t.id}" ${answers.transparency[t.id]?'checked':''}>
+            <label for="${t.id}">${t.label}</label>
+          </div>`).join('')}
+      </div>
+      <div class="actions">
+        <button class="back" id="backBtn">Back</button>
+        <button class="next" id="nextBtn">See result</button>
+      </div>`;
+    WIZ.transparency.forEach(t=>{
+      document.getElementById(t.id).addEventListener('change', e=>{ answers.transparency[t.id] = e.target.checked; });
+    });
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      goTo(answers.domain && answers.domain !== 'NONE' ? 3 : 2);
+    });
+    document.getElementById('nextBtn').addEventListener('click', ()=>{
+      const hit = WIZ.transparency.find(t=>answers.transparency[t.id]);
+      if(hit){
+        addTrace('> Article 50 check: transparency trigger selected', true);
+        addTrace(`  match: ${hit.id} — ${hit.label}`, true);
+        finish({ tier:'LIMITED', cite:`${hit.cite} — ${hit.id}`, label:hit.label,
+          reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.' });
+      } else {
+        addTrace('> Article 50 check: no transparency triggers selected', false);
+        addTrace('> no tier matched — default classification applies', false);
+        finish({ tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
+          reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.' });
+      }
+    });
+  }
+}
+
+function setupYesNo(field, onDecide){
+  const yesBtn = document.getElementById('ynYes');
+  const noBtn = document.getElementById('ynNo');
+  const nextBtn = document.getElementById('nextBtn');
+  let choice = answers[field];
+  if(choice === true) yesBtn.classList.add('chosen');
+  if(choice === false) noBtn.classList.add('chosen');
+  nextBtn.disabled = (choice === null || choice === undefined);
+  yesBtn.addEventListener('click', ()=>{ choice=true; answers[field]=true; yesBtn.classList.add('chosen'); noBtn.classList.remove('chosen'); nextBtn.disabled=false; });
+  noBtn.addEventListener('click', ()=>{ choice=false; answers[field]=false; noBtn.classList.add('chosen'); yesBtn.classList.remove('chosen'); nextBtn.disabled=false; });
+  nextBtn.addEventListener('click', ()=> onDecide(choice));
+}
+
+function finish(outcome){
+  document.getElementById('stepContainer').style.display = 'none';
+  document.getElementById('progress').style.display = 'none';
+  const tierClass = outcome.tier;
+  const tierName = {PROHIBITED:'Prohibited', HIGH:'High-Risk', LIMITED:'Limited Risk', MINIMAL:'Minimal Risk'}[tierClass];
+  document.getElementById('result').innerHTML = `
+    <div class="card result-card ${tierClass}">
+      <span class="badge ${tierClass}">${tierClass}</span>
+      <h2 class="tier-title">${tierName}</h2>
+      <div class="rule-cite">${outcome.cite} — "${outcome.label}"</div>
+      <div class="reasoning">${outcome.reasoning}</div>
+      <div class="disclaimer">This is a structured screen against the EU AI Act's public criteria (see wizard.json), not a legal determination.</div>
+    </div>
+    <div class="actions"><button class="restart" id="restartBtn">Start over</button></div>`;
+  document.getElementById('restartBtn').addEventListener('click', restart);
+}
+
+function restart(){
+  stepIndex = 0;
+  answers = { prohibited:{}, safety:null, domain:null, carveout:null, transparency:{} };
+  document.getElementById('trace').innerHTML = '';
+  document.getElementById('stepContainer').style.display = 'block';
+  document.getElementById('progress').style.display = 'flex';
+  render();
+}
+</script>
+</body>
+</html>

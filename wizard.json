@@ -1,0 +1,37 @@
+{
+  "prohibited": [
+    { "id": "P1", "label": "Uses subliminal or manipulative techniques likely to cause harm", "cite": "Article 5(1)(a)" },
+    { "id": "P2", "label": "Exploits vulnerabilities of children, elderly people, or people with disabilities", "cite": "Article 5(1)(b)" },
+    { "id": "P3", "label": "Performs social scoring of individuals on behalf of a public authority", "cite": "Article 5(1)(c)" },
+    { "id": "P4", "label": "Performs real-time remote biometric identification in public spaces for law enforcement", "cite": "Article 5(1)(h)" },
+    { "id": "P5", "label": "Infers race, political opinion, religion, or sexual orientation from biometric data", "cite": "Article 5(1)(g)" },
+    { "id": "P6", "label": "Infers emotions in the workplace or in education settings", "cite": "Article 5(1)(f)" },
+    { "id": "P7", "label": "Predicts the likelihood of someone committing a crime based solely on profiling", "cite": "Article 5(1)(d)" },
+    { "id": "P8", "label": "Scrapes facial images from the internet or CCTV to build or expand a recognition database", "cite": "Article 5(1)(e)" }
+  ],
+  "safetyComponent": {
+    "label": "Is this system a safety component of a product already regulated under EU law? (e.g. medical devices, machinery, vehicles, aviation, toys, lifts)",
+    "cite": "Article 6(1)"
+  },
+  "domains": [
+    { "id": "H1", "label": "Biometric identification or categorization", "cite": "Annex III(1)" },
+    { "id": "H2", "label": "Critical infrastructure (water, power, gas, traffic, digital infrastructure)", "cite": "Annex III(2)" },
+    { "id": "H3", "label": "Education or vocational training", "cite": "Annex III(3)" },
+    { "id": "H4", "label": "Employment or worker management (hiring, monitoring, promotion, termination)", "cite": "Annex III(4)" },
+    { "id": "H5", "label": "Access to essential services (credit, insurance, public benefits)", "cite": "Annex III(5)" },
+    { "id": "H6", "label": "Law enforcement", "cite": "Annex III(6)" },
+    { "id": "H7", "label": "Migration, asylum, or border control", "cite": "Annex III(7)" },
+    { "id": "H8", "label": "Justice or democratic processes", "cite": "Annex III(8)" },
+    { "id": "NONE", "label": "None of these" }
+  ],
+  "carveout": {
+    "label": "Does the system only perform a narrow procedural task, or check/verify a decision a human already made \u2014 without profiling individuals?",
+    "cite": "Article 6(3)"
+  },
+  "transparency": [
+    { "id": "L1", "label": "Acts as a chatbot or conversational AI interacting with people", "cite": "Article 50(1)" },
+    { "id": "L2", "label": "Generates or manipulates synthetic images, audio, or video (deepfakes)", "cite": "Article 50(4)" },
+    { "id": "L3", "label": "Generates text published to inform the public on matters of public interest", "cite": "Article 50(4)" },
+    { "id": "L4", "label": "Performs emotion recognition or biometric categorization not covered above", "cite": "Article 50(3)" }
+  ]
+}
