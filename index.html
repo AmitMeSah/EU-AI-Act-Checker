@@ -256,9 +256,15 @@ function render(){
             <label for="${p.id}">${p.label}</label>
           </div>`).join('')}
       </div>
-      <div class="actions"><button class="next" id="nextBtn">Next</button></div>`;
+      <div class="actions"><button class="next" id="nextBtn">None of these — continue</button></div>`;
+    const nextBtnP = document.getElementById('nextBtn');
+    function updateProhibitedLabel(){
+      const anyChecked = WIZ.prohibited.some(p=>answers.prohibited[p.id]);
+      nextBtnP.textContent = anyChecked ? 'Next' : 'None of these — continue';
+    }
+    updateProhibitedLabel();
     WIZ.prohibited.forEach(p=>{
-      document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; });
+      document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; updateProhibitedLabel(); });
     });
     document.getElementById('nextBtn').addEventListener('click', ()=>{
       const hit = WIZ.prohibited.find(p=>answers.prohibited[p.id]);
@@ -349,7 +355,7 @@ function render(){
       } else {
         addTrace('> Article 6(3) carve-out: does not apply', true);
         finish({ tier:'HIGH', cite:d.cite, label:d.label,
-          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.' });
+          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations. Note: the enforcement deadline for Annex III high-risk obligations was deferred to 2 December 2027 under the Digital Omnibus agreement — the classification applies now, but the compliance deadline is later.' });
       }
     });
     document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
@@ -368,10 +374,16 @@ function render(){
       </div>
       <div class="actions">
         <button class="back" id="backBtn">Back</button>
-        <button class="next" id="nextBtn">See result</button>
+        <button class="next" id="nextBtn">None of these — see result</button>
       </div>`;
+    const nextBtnT = document.getElementById('nextBtn');
+    function updateTransparencyLabel(){
+      const anyChecked = WIZ.transparency.some(t=>answers.transparency[t.id]);
+      nextBtnT.textContent = anyChecked ? 'Next — see result' : 'None of these — see result';
+    }
+    updateTransparencyLabel();
     WIZ.transparency.forEach(t=>{
-      document.getElementById(t.id).addEventListener('change', e=>{ answers.transparency[t.id] = e.target.checked; });
+      document.getElementById(t.id).addEventListener('change', e=>{ answers.transparency[t.id] = e.target.checked; updateTransparencyLabel(); });
     });
     document.getElementById('backBtn').addEventListener('click', ()=>{
       goTo(answers.domain && answers.domain !== 'NONE' ? 3 : 2);
