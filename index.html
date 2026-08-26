@@ -47,6 +47,17 @@
     margin:0 0 12px;
   }
   .sub{color:var(--text-dim);font-size:15px;max-width:52ch;}
+  .reg-status{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--minimal);
+    background:rgba(79,157,105,0.1);
+    border:1px solid rgba(79,157,105,0.3);
+    border-radius:5px;
+    padding:8px 12px;
+    margin-top:14px;
+    line-height:1.5;
+  }
 
   .progress{display:flex;gap:6px;margin:22px 0;}
   .progress-dot{height:4px;flex:1;background:var(--border);border-radius:2px;overflow:hidden;position:relative;}
@@ -204,6 +215,7 @@
     <div class="eyebrow">Article 5 / Article 6 / Annex III / Article 50</div>
     <h1>EU AI Act<br>Risk Self-Assessment</h1>
     <p class="sub">Answer a few questions about your AI system. The tool walks the Act's actual decision tree and flags the likely risk tier — with citations.</p>
+    <div class="reg-status">✓ Reflects current rollout: Art. 5 bans in force since 2 Feb 2025 · Art. 50 transparency in force since 2 Aug 2026 · Annex III high-risk deadline extended to 2 Dec 2027 (Digital Omnibus)</div>
   </header>
 
   <div class="progress" id="progress"></div>
@@ -282,7 +294,8 @@ function render(){
       addTrace('> Article 5 check: evaluating selected item(s)', true);
       addTrace(`  match: ${hit.id} — ${hit.label}`, true);
       finish({ tier:'PROHIBITED', cite:`${hit.cite} — Rule ${hit.id}`, label:hit.label,
-        reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.' });
+        reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.',
+        footnote:'⏱ Article 5 prohibitions have been in force since 2 February 2025 — this is not a future or proposed rule.' });
     });
     document.getElementById('skipBtn').addEventListener('click', ()=>{
       addTrace('> Article 5 check: none apply — skipped to next check', false);
@@ -306,7 +319,8 @@ function render(){
       if(v){
         addTrace('> Article 6(1) check: is a regulated product safety component', true);
         finish({ tier:'HIGH', cite:WIZ.safetyComponent.cite, label:'Regulated product safety component',
-          reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.' });
+          reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.',
+          footnote:'⏱ This path follows the existing sectoral product-safety law\'s own timeline (e.g. medical devices, machinery) — it is separate from the Annex III Dec 2027 deferral, which applies only to the other high-risk path.' });
       } else {
         addTrace('> Article 6(1) check: not a regulated safety component', false);
         goTo(2);
@@ -404,13 +418,15 @@ function render(){
       addTrace('> Article 50 check: evaluating selected item(s)', true);
       addTrace(`  match: ${hit.id} — ${hit.label}`, true);
       finish({ tier:'LIMITED', cite:`${hit.cite} — ${hit.id}`, label:hit.label,
-        reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.' });
+        reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.',
+        footnote:'⏱ Article 50 transparency obligations have been enforceable since 2 August 2026 — this applies now, with a separate grace period through 2 Dec 2026 only for the generative-content watermarking sub-requirement.' });
     });
     document.getElementById('skipBtn').addEventListener('click', ()=>{
       addTrace('> Article 50 check: none apply', false);
       addTrace('> no tier matched — default classification applies', false);
       finish({ tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
-        reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.' });
+        reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.',
+        footnote:'⏱ This reflects the Act as currently amended (including the May 2026 Digital Omnibus changes) — re-check if your use case evolves, since added functionality can shift the classification.' });
     });
   }
 }
