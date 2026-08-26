@@ -106,7 +106,7 @@
   .yn-btn:hover{border-color:var(--brass);}
   .yn-btn.chosen{border-color:var(--brass);background:rgba(201,162,39,0.14);}
 
-  .actions{display:flex;gap:10px;margin-top:20px;}
+  .actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
   button.next{
     background:var(--brass);
     color:#1B1400;
@@ -179,6 +179,15 @@
   .tier-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:0 0 8px;}
   .rule-cite{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:12px;}
   .reasoning{font-size:14.5px;color:var(--text);}
+  .footnote{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--high);
+    background:rgba(217,138,41,0.1);
+    border:1px solid rgba(217,138,41,0.35);
+    border-radius:5px;
+    padding:10px 12px;
+  }
   .disclaimer{
     margin-top:20px;
     font-size:12.5px;
@@ -256,27 +265,28 @@ function render(){
             <label for="${p.id}">${p.label}</label>
           </div>`).join('')}
       </div>
-      <div class="actions"><button class="next" id="nextBtn">None of these — continue</button></div>`;
-    const nextBtnP = document.getElementById('nextBtn');
-    function updateProhibitedLabel(){
-      const anyChecked = WIZ.prohibited.some(p=>answers.prohibited[p.id]);
-      nextBtnP.textContent = anyChecked ? 'Next' : 'None of these — continue';
+      <div class="actions">
+        <button class="next" id="checkBtn" disabled>Check my selection</button>
+        <button class="back" id="skipBtn">None apply — next</button>
+      </div>`;
+    const checkBtn = document.getElementById('checkBtn');
+    function updateCheckBtn(){
+      checkBtn.disabled = !WIZ.prohibited.some(p=>answers.prohibited[p.id]);
     }
-    updateProhibitedLabel();
+    updateCheckBtn();
     WIZ.prohibited.forEach(p=>{
-      document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; updateProhibitedLabel(); });
+      document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; updateCheckBtn(); });
     });
-    document.getElementById('nextBtn').addEventListener('click', ()=>{
+    checkBtn.addEventListener('click', ()=>{
       const hit = WIZ.prohibited.find(p=>answers.prohibited[p.id]);
-      if(hit){
-        addTrace('> Article 5 check: prohibited practice selected', true);
-        addTrace(`  match: ${hit.id} — ${hit.label}`, true);
-        finish({ tier:'PROHIBITED', cite:`${hit.cite} — Rule ${hit.id}`, label:hit.label,
-          reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.' });
-      } else {
-        addTrace('> Article 5 check: no prohibited practices selected', false);
-        goTo(1);
-      }
+      addTrace('> Article 5 check: evaluating selected item(s)', true);
+      addTrace(`  match: ${hit.id} — ${hit.label}`, true);
+      finish({ tier:'PROHIBITED', cite:`${hit.cite} — Rule ${hit.id}`, label:hit.label,
+        reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.' });
+    });
+    document.getElementById('skipBtn').addEventListener('click', ()=>{
+      addTrace('> Article 5 check: none apply — skipped to next check', false);
+      goTo(1);
     });
   }
 
@@ -355,7 +365,8 @@ function render(){
       } else {
         addTrace('> Article 6(3) carve-out: does not apply', true);
         finish({ tier:'HIGH', cite:d.cite, label:d.label,
-          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations. Note: the enforcement deadline for Annex III high-risk obligations was deferred to 2 December 2027 under the Digital Omnibus agreement — the classification applies now, but the compliance deadline is later.' });
+          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.',
+          footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.' });
       }
     });
     document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
@@ -374,33 +385,32 @@ function render(){
       </div>
       <div class="actions">
         <button class="back" id="backBtn">Back</button>
-        <button class="next" id="nextBtn">None of these — see result</button>
+        <button class="next" id="checkBtn" disabled>Check my selection</button>
+        <button class="back" id="skipBtn">None apply — see result</button>
       </div>`;
-    const nextBtnT = document.getElementById('nextBtn');
-    function updateTransparencyLabel(){
-      const anyChecked = WIZ.transparency.some(t=>answers.transparency[t.id]);
-      nextBtnT.textContent = anyChecked ? 'Next — see result' : 'None of these — see result';
+    const checkBtnT = document.getElementById('checkBtn');
+    function updateCheckBtnT(){
+      checkBtnT.disabled = !WIZ.transparency.some(t=>answers.transparency[t.id]);
     }
-    updateTransparencyLabel();
+    updateCheckBtnT();
     WIZ.transparency.forEach(t=>{
-      document.getElementById(t.id).addEventListener('change', e=>{ answers.transparency[t.id] = e.target.checked; updateTransparencyLabel(); });
+      document.getElementById(t.id).addEventListener('change', e=>{ answers.transparency[t.id] = e.target.checked; updateCheckBtnT(); });
     });
     document.getElementById('backBtn').addEventListener('click', ()=>{
       goTo(answers.domain && answers.domain !== 'NONE' ? 3 : 2);
     });
-    document.getElementById('nextBtn').addEventListener('click', ()=>{
+    checkBtnT.addEventListener('click', ()=>{
       const hit = WIZ.transparency.find(t=>answers.transparency[t.id]);
-      if(hit){
-        addTrace('> Article 50 check: transparency trigger selected', true);
-        addTrace(`  match: ${hit.id} — ${hit.label}`, true);
-        finish({ tier:'LIMITED', cite:`${hit.cite} — ${hit.id}`, label:hit.label,
-          reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.' });
-      } else {
-        addTrace('> Article 50 check: no transparency triggers selected', false);
-        addTrace('> no tier matched — default classification applies', false);
-        finish({ tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
-          reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.' });
-      }
+      addTrace('> Article 50 check: evaluating selected item(s)', true);
+      addTrace(`  match: ${hit.id} — ${hit.label}`, true);
+      finish({ tier:'LIMITED', cite:`${hit.cite} — ${hit.id}`, label:hit.label,
+        reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.' });
+    });
+    document.getElementById('skipBtn').addEventListener('click', ()=>{
+      addTrace('> Article 50 check: none apply', false);
+      addTrace('> no tier matched — default classification applies', false);
+      finish({ tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
+        reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.' });
     });
   }
 }
@@ -429,6 +439,7 @@ function finish(outcome){
       <h2 class="tier-title">${tierName}</h2>
       <div class="rule-cite">${outcome.cite} — "${outcome.label}"</div>
       <div class="reasoning">${outcome.reasoning}</div>
+      ${outcome.footnote ? `<div class="footnote">${outcome.footnote}</div>` : ''}
       <div class="disclaimer">This is a structured screen against the EU AI Act's public criteria (see wizard.json), not a legal determination.</div>
     </div>
     <div class="actions"><button class="restart" id="restartBtn">Start over</button></div>`;
