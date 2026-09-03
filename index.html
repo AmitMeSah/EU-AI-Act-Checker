@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EU AI Act — Risk Self-Assessment</title>
+<meta name="description" content="Answer a few questions about your AI system and get a structured risk-tier screen against the EU AI Act's own decision logic — Article 5, Article 6, Annex III, Article 50.">
+<meta property="og:title" content="EU AI Act — Risk Self-Assessment">
+<meta property="og:description" content="A structured Q&A wizard that walks your AI use case through the EU AI Act's actual classification tree — prohibited, high-risk, limited, or minimal.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://amitmesah.github.io/EU-AI-Act-Checker/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="EU AI Act — Risk Self-Assessment">
+<meta name="twitter:description" content="A structured Q&A wizard that walks your AI use case through the EU AI Act's actual classification tree.">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -58,6 +67,14 @@
     margin-top:14px;
     line-height:1.5;
   }
+  .scope-note, .privacy-note{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--text-dim);
+    padding:6px 12px;
+    margin-top:8px;
+    line-height:1.5;
+  }
 
   .progress{display:flex;gap:6px;margin:22px 0;}
   .progress-dot{height:4px;flex:1;background:var(--border);border-radius:2px;overflow:hidden;position:relative;}
@@ -88,7 +105,7 @@
   }
   .option:hover{border-color:var(--brass);}
   .option input{margin-top:2px;accent-color:var(--brass);cursor:pointer;flex-shrink:0;}
-  .option label{cursor:pointer;}
+  .option span{cursor:pointer;}
 
   select{
     width:100%;
@@ -189,6 +206,9 @@
 
   .tier-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:0 0 8px;}
   .rule-cite{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:12px;}
+  .rule-cite-list{list-style:none;margin:0 0 12px;padding:0;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);}
+  .rule-cite-list li{margin-bottom:4px;padding-left:14px;position:relative;}
+  .rule-cite-list li::before{content:'•';position:absolute;left:0;color:var(--brass);}
   .reasoning{font-size:14.5px;color:var(--text);}
   .footnote{
     margin-top:14px;
@@ -206,6 +226,38 @@
     border-top:1px solid var(--border);
     padding-top:14px;
   }
+  .next-steps{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .next-steps h3{
+    font-family:'Fraunces',serif;
+    font-size:14.5px;
+    font-weight:600;
+    margin:0 0 8px;
+    color:var(--text);
+  }
+  .next-steps ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--text);line-height:1.6;}
+  .print-btn{
+    background:transparent;
+    color:var(--text-dim);
+    border:1px solid var(--border);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  @media print{
+    body{background:#fff;color:#111;}
+    .progress, #trace, .actions, .scope-note, .privacy-note, .eyebrow{display:none !important;}
+    .card, .result-card{background:#fff;border:1px solid #999;color:#111;}
+    .reg-status{background:#fff;border:1px solid #999;color:#111;}
+    .footnote{background:#fff;border:1px solid #999;color:#111;}
+    .disclaimer, .rule-cite, .rule-cite-list, .next-steps ul, .reasoning{color:#111;}
+    a{color:#111;}
+  }
   footer{margin-top:50px;font-size:12px;color:var(--text-dim);text-align:center;}
 </style>
 </head>
@@ -216,6 +268,8 @@
     <h1>EU AI Act<br>Risk Self-Assessment</h1>
     <p class="sub">Answer a few questions about your AI system. The tool walks the Act's actual decision tree and flags the likely risk tier — with citations.</p>
     <div class="reg-status">✓ Reflects current rollout: Art. 5 bans in force since 2 Feb 2025 · Art. 50 transparency in force since 2 Aug 2026 · Annex III high-risk deadline extended to 2 Dec 2027 (Digital Omnibus)</div>
+    <div class="scope-note">ℹ This tool assesses deployer risk tiers only — GPAI model-provider obligations (Articles 51–56) are separate and not covered here.</div>
+    <div class="privacy-note">🔒 Nothing you enter leaves your browser — this tool runs entirely client-side. No data is transmitted, logged, or stored anywhere.</div>
   </header>
 
   <div class="progress" id="progress"></div>
@@ -223,7 +277,11 @@
   <div id="trace"></div>
   <div id="result"></div>
 
-  <footer>Not legal advice. A structured screen against the EU AI Act's public criteria — always confirm with qualified counsel before relying on a classification.</footer>
+  <footer>
+    <p>Not legal advice. A structured screen against the EU AI Act's public criteria — always confirm with qualified counsel before relying on a classification.</p>
+    <p style="margin-top:14px;">A personal learning project by Amit, built while studying AI governance and the EU AI Act — directed and specified by Amit, built hands-on with Claude (Anthropic) as an AI pair-programmer. Not affiliated with, or an output of, any employer.</p>
+    <p style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;">Last updated: 3 September 2026</p>
+  </footer>
 </div>
 
 <script>
@@ -232,7 +290,14 @@ const STEPS = ['prohibited','safety','domain','carveout','transparency','result'
 let stepIndex = 0;
 let answers = { prohibited:{}, safety:null, domain:null, carveout:null, transparency:{} };
 
-fetch('wizard.json').then(r=>r.json()).then(data=>{ WIZ = data; render(); })
+fetch('wizard.json').then(r=>r.json()).then(data=>{
+    WIZ = data;
+    if(decodeAnswersFromURL()){
+      finish(computeOutcome());
+    } else {
+      render();
+    }
+  })
   .catch(()=>{
     document.getElementById('stepContainer').innerHTML = '<div class="q-title">⚠ Could not load wizard.json</div><div class="q-cite">Make sure it sits next to index.html and the page is served over http(s).</div>';
   });
@@ -272,10 +337,10 @@ function render(){
       <div class="q-cite">Article 5 — Prohibited Practices</div>
       <div class="option-list">
         ${WIZ.prohibited.map(p=>`
-          <div class="option">
+          <label class="option" for="${p.id}">
             <input type="checkbox" id="${p.id}" ${answers.prohibited[p.id]?'checked':''}>
-            <label for="${p.id}">${p.label}</label>
-          </div>`).join('')}
+            <span>${p.label}</span>
+          </label>`).join('')}
       </div>
       <div class="actions">
         <button class="next" id="checkBtn" disabled>Check my selection</button>
@@ -290,11 +355,13 @@ function render(){
       document.getElementById(p.id).addEventListener('change', e=>{ answers.prohibited[p.id] = e.target.checked; updateCheckBtn(); });
     });
     checkBtn.addEventListener('click', ()=>{
-      const hit = WIZ.prohibited.find(p=>answers.prohibited[p.id]);
+      const hits = WIZ.prohibited.filter(p=>answers.prohibited[p.id]);
       addTrace('> Article 5 check: evaluating selected item(s)', true);
-      addTrace(`  match: ${hit.id} — ${hit.label}`, true);
-      finish({ tier:'PROHIBITED', cite:`${hit.cite} — Rule ${hit.id}`, label:hit.label,
-        reasoning:'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.',
+      hits.forEach(h=> addTrace(`  match: ${h.id} — ${h.label}`, true));
+      finish({ tier:'PROHIBITED', matches:hits.map(h=>({cite:`${h.cite} — Rule ${h.id}`, label:h.label})),
+        reasoning: hits.length > 1
+          ? 'This use case matches multiple practices the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.'
+          : 'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.',
         footnote:'⏱ Article 5 prohibitions have been in force since 2 February 2025 — this is not a future or proposed rule.' });
     });
     document.getElementById('skipBtn').addEventListener('click', ()=>{
@@ -320,7 +387,12 @@ function render(){
         addTrace('> Article 6(1) check: is a regulated product safety component', true);
         finish({ tier:'HIGH', cite:WIZ.safetyComponent.cite, label:'Regulated product safety component',
           reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.',
-          footnote:'⏱ This path follows the existing sectoral product-safety law\'s own timeline (e.g. medical devices, machinery) — it is separate from the Annex III Dec 2027 deferral, which applies only to the other high-risk path.' });
+          footnote:'⏱ This path follows the existing sectoral product-safety law\'s own timeline (e.g. medical devices, machinery) — it is separate from the Annex III Dec 2027 deferral, which applies only to the other high-risk path.',
+          nextSteps:[
+            'Use the conformity assessment route already required by the sectoral law (e.g. CE marking for medical devices/machinery)',
+            'Fold in the Act\'s AI-specific requirements — risk management, technical documentation, automatic logging, human oversight — within that existing framework',
+            'No separate Annex III / EU high-risk AI database registration applies to this path'
+          ] });
       } else {
         addTrace('> Article 6(1) check: not a regulated safety component', false);
         goTo(2);
@@ -380,7 +452,15 @@ function render(){
         addTrace('> Article 6(3) carve-out: does not apply', true);
         finish({ tier:'HIGH', cite:d.cite, label:d.label,
           reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.',
-          footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.' });
+          footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.',
+          footnote2: d.id === 'H4' ? '👥 Employment-specific (Article 26(7)): you must inform employee representatives and affected workers before deploying this system in the workplace — a separate obligation from the general human-oversight duty above.' : null,
+          nextSteps:[
+            'Establish a risk management system spanning the AI system\'s full lifecycle',
+            'Prepare technical documentation and maintain automatic logging',
+            'Design meaningful human oversight — someone with real authority and ability to intervene or stop the system',
+            'Complete conformity assessment and register the system in the EU high-risk AI database',
+            'If you are a public body, or the system assesses creditworthiness or insurance risk, you likely also need a Fundamental Rights Impact Assessment (FRIA) under Article 27 — a separate obligation from the conformity assessment above'
+          ] });
       }
     });
     document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
@@ -392,10 +472,10 @@ function render(){
       <div class="q-cite">Article 50 — Transparency Obligations</div>
       <div class="option-list">
         ${WIZ.transparency.map(t=>`
-          <div class="option">
+          <label class="option" for="${t.id}">
             <input type="checkbox" id="${t.id}" ${answers.transparency[t.id]?'checked':''}>
-            <label for="${t.id}">${t.label}</label>
-          </div>`).join('')}
+            <span>${t.label}</span>
+          </label>`).join('')}
       </div>
       <div class="actions">
         <button class="back" id="backBtn">Back</button>
@@ -414,10 +494,10 @@ function render(){
       goTo(answers.domain && answers.domain !== 'NONE' ? 3 : 2);
     });
     checkBtnT.addEventListener('click', ()=>{
-      const hit = WIZ.transparency.find(t=>answers.transparency[t.id]);
+      const hits = WIZ.transparency.filter(t=>answers.transparency[t.id]);
       addTrace('> Article 50 check: evaluating selected item(s)', true);
-      addTrace(`  match: ${hit.id} — ${hit.label}`, true);
-      finish({ tier:'LIMITED', cite:`${hit.cite} — ${hit.id}`, label:hit.label,
+      hits.forEach(h=> addTrace(`  match: ${h.id} — ${h.label}`, true));
+      finish({ tier:'LIMITED', matches:hits.map(h=>({cite:`${h.cite} — ${h.id}`, label:h.label})),
         reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.',
         footnote:'⏱ Article 50 transparency obligations have been enforceable since 2 August 2026 — this applies now, with a separate grace period through 2 Dec 2026 only for the generative-content watermarking sub-requirement.' });
     });
@@ -444,22 +524,112 @@ function setupYesNo(field, onDecide){
   nextBtn.addEventListener('click', ()=> onDecide(choice));
 }
 
+function encodeAnswersToURL(){
+  const params = new URLSearchParams();
+  const pIds = WIZ.prohibited.filter(p=>answers.prohibited[p.id]).map(p=>p.id);
+  if(pIds.length) params.set('p', pIds.join(','));
+  if(answers.safety !== null && answers.safety !== undefined) params.set('s', answers.safety ? '1':'0');
+  if(answers.domain) params.set('d', answers.domain);
+  if(answers.carveout !== null && answers.carveout !== undefined) params.set('c', answers.carveout ? '1':'0');
+  const tIds = WIZ.transparency.filter(t=>answers.transparency[t.id]).map(t=>t.id);
+  if(tIds.length) params.set('t', tIds.join(','));
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? ('?'+qs) : window.location.pathname);
+}
+
+function decodeAnswersFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  if([...params.keys()].length === 0) return false;
+  (params.get('p')||'').split(',').filter(Boolean).forEach(id=> answers.prohibited[id] = true);
+  if(params.has('s')) answers.safety = params.get('s') === '1';
+  if(params.has('d')) answers.domain = params.get('d');
+  if(params.has('c')) answers.carveout = params.get('c') === '1';
+  (params.get('t')||'').split(',').filter(Boolean).forEach(id=> answers.transparency[id] = true);
+  return true;
+}
+
+function computeOutcome(){
+  const pHits = WIZ.prohibited.filter(p=>answers.prohibited[p.id]);
+  if(pHits.length){
+    return { tier:'PROHIBITED', matches:pHits.map(h=>({cite:`${h.cite} — Rule ${h.id}`, label:h.label})),
+      reasoning: pHits.length > 1
+        ? 'This use case matches multiple practices the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.'
+        : 'This use case matches a practice the Act bans outright. It cannot legally be placed on the market or deployed in the EU as described.',
+      footnote:'⏱ Article 5 prohibitions have been in force since 2 February 2025 — this is not a future or proposed rule.' };
+  }
+  if(answers.safety === true){
+    return { tier:'HIGH', cite:WIZ.safetyComponent.cite, label:'Regulated product safety component',
+      reasoning:'This system is a safety component of a product already regulated under existing EU harmonization law, which triggers high-risk classification under the Act.',
+      footnote:'⏱ This path follows the existing sectoral product-safety law\'s own timeline (e.g. medical devices, machinery) — it is separate from the Annex III Dec 2027 deferral, which applies only to the other high-risk path.',
+      nextSteps:[
+        'Use the conformity assessment route already required by the sectoral law (e.g. CE marking for medical devices/machinery)',
+        'Fold in the Act\'s AI-specific requirements — risk management, technical documentation, automatic logging, human oversight — within that existing framework',
+        'No separate Annex III / EU high-risk AI database registration applies to this path'
+      ] };
+  }
+  if(answers.domain && answers.domain !== 'NONE' && answers.carveout === false){
+    const d = WIZ.domains.find(x=>x.id===answers.domain);
+    return { tier:'HIGH', cite:d.cite, label:d.label,
+      reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.',
+      footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.',
+      footnote2: d.id === 'H4' ? '👥 Employment-specific (Article 26(7)): you must inform employee representatives and affected workers before deploying this system in the workplace — a separate obligation from the general human-oversight duty above.' : null,
+      nextSteps:[
+        'Establish a risk management system spanning the AI system\'s full lifecycle',
+        'Prepare technical documentation and maintain automatic logging',
+        'Design meaningful human oversight — someone with real authority and ability to intervene or stop the system',
+        'Complete conformity assessment and register the system in the EU high-risk AI database',
+        'If you are a public body, or the system assesses creditworthiness or insurance risk, you likely also need a Fundamental Rights Impact Assessment (FRIA) under Article 27 — a separate obligation from the conformity assessment above'
+      ] };
+  }
+  const tHits = WIZ.transparency.filter(t=>answers.transparency[t.id]);
+  if(tHits.length){
+    return { tier:'LIMITED', matches:tHits.map(h=>({cite:`${h.cite} — ${h.id}`, label:h.label})),
+      reasoning:'This use case triggers a transparency obligation only — no conformity assessment required, but affected individuals must be informed they are interacting with or subject to AI.',
+      footnote:'⏱ Article 50 transparency obligations have been enforceable since 2 August 2026 — this applies now, with a separate grace period through 2 Dec 2026 only for the generative-content watermarking sub-requirement.' };
+  }
+  return { tier:'MINIMAL', cite:'No Article 5 / 6 / 50 trigger identified', label:'Minimal risk',
+    reasoning:'Based on the answers given, no prohibited, high-risk, or transparency-trigger criteria were matched. No specific obligations apply under the Act, though voluntary codes of conduct are encouraged.',
+    footnote:'⏱ This reflects the Act as currently amended (including the May 2026 Digital Omnibus changes) — re-check if your use case evolves, since added functionality can shift the classification.' };
+}
+
 function finish(outcome){
   document.getElementById('stepContainer').style.display = 'none';
   document.getElementById('progress').style.display = 'none';
+  encodeAnswersToURL();
   const tierClass = outcome.tier;
   const tierName = {PROHIBITED:'Prohibited', HIGH:'High-Risk', LIMITED:'Limited Risk', MINIMAL:'Minimal Risk'}[tierClass];
+  const citeBlock = outcome.matches
+    ? `<ul class="rule-cite-list">${outcome.matches.map(m=>`<li>${m.cite} — "${m.label}"</li>`).join('')}</ul>`
+    : `<div class="rule-cite">${outcome.cite} — "${outcome.label}"</div>`;
+  const nextStepsBlock = outcome.nextSteps
+    ? `<div class="next-steps"><h3>What this means for you</h3><ul>${outcome.nextSteps.map(s=>`<li>${s}</li>`).join('')}</ul></div>`
+    : '';
   document.getElementById('result').innerHTML = `
     <div class="card result-card ${tierClass}">
       <span class="badge ${tierClass}">${tierClass}</span>
       <h2 class="tier-title">${tierName}</h2>
-      <div class="rule-cite">${outcome.cite} — "${outcome.label}"</div>
+      ${citeBlock}
       <div class="reasoning">${outcome.reasoning}</div>
       ${outcome.footnote ? `<div class="footnote">${outcome.footnote}</div>` : ''}
-      <div class="disclaimer">This is a structured screen against the EU AI Act's public criteria (see wizard.json), not a legal determination.</div>
+      ${outcome.footnote2 ? `<div class="footnote">${outcome.footnote2}</div>` : ''}
+      ${nextStepsBlock}
+      <div class="disclaimer">This is a structured screen against the EU AI Act's public criteria, not a legal determination.</div>
     </div>
-    <div class="actions"><button class="restart" id="restartBtn">Start over</button></div>`;
+    <div class="actions">
+      <button class="restart" id="restartBtn">Start over</button>
+      <button class="print-btn" id="printBtn">Print / Save as PDF</button>
+      <button class="print-btn" id="copyLinkBtn">Copy link to this result</button>
+    </div>`;
   document.getElementById('restartBtn').addEventListener('click', restart);
+  document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+  document.getElementById('copyLinkBtn').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(window.location.href).then(()=>{
+      const btn = document.getElementById('copyLinkBtn');
+      const original = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(()=>{ btn.textContent = original; }, 1500);
+    });
+  });
 }
 
 function restart(){
@@ -468,6 +638,7 @@ function restart(){
   document.getElementById('trace').innerHTML = '';
   document.getElementById('stepContainer').style.display = 'block';
   document.getElementById('progress').style.display = 'flex';
+  history.replaceState(null, '', window.location.pathname);
   render();
 }
 </script>
