@@ -24,9 +24,13 @@
     { "id": "H8", "label": "Justice or democratic processes", "cite": "Annex III(8)" },
     { "id": "NONE", "label": "None of these" }
   ],
-  "carveout": {
-    "label": "Does the system only perform a narrow procedural task, or check/verify a decision a human already made \u2014 without profiling individuals?",
-    "cite": "Article 6(3)"
+  "carveoutNarrowTask": {
+    "label": "Does the system only perform a narrow procedural task, or check/verify a decision a human already made?",
+    "cite": "Article 6(3)(a\u2013c)"
+  },
+  "carveoutProfiling": {
+    "label": "Does the system profile individuals \u2014 e.g. build behavioral, preference, or risk profiles about specific people?",
+    "cite": "Article 6(3) profiling override"
   },
   "transparency": [
     { "id": "L1", "label": "Acts as a chatbot or conversational AI interacting with people", "cite": "Article 50(1)" },

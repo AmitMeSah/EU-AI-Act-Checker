@@ -76,10 +76,19 @@
     line-height:1.5;
   }
 
-  .progress{display:flex;gap:6px;margin:22px 0;}
+  .step-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    margin-bottom:8px;
+    letter-spacing:0.03em;
+  }
+  .progress{display:flex;gap:6px;margin-bottom:22px;}
   .progress-dot{height:4px;flex:1;background:var(--border);border-radius:2px;overflow:hidden;position:relative;}
   .progress-dot.done{background:var(--brass);}
   .progress-dot.active::after{content:'';position:absolute;inset:0;background:var(--brass);width:50%;}
+  .progress-dot.clickable{cursor:pointer;}
+  .progress-dot.clickable:hover{background:rgba(201,162,39,0.5);}
 
   .card{
     background:var(--surface);
@@ -101,22 +110,12 @@
     background:var(--surface-2);
     cursor:pointer;
     font-size:14.5px;
-    transition:border-color 0.15s;
+    transition:border-color 0.15s, background 0.15s;
   }
   .option:hover{border-color:var(--brass);}
+  .option:has(input:checked){border-color:var(--brass);background:rgba(201,162,39,0.14);}
   .option input{margin-top:2px;accent-color:var(--brass);cursor:pointer;flex-shrink:0;}
   .option span{cursor:pointer;}
-
-  select{
-    width:100%;
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    font-size:14.5px;
-    padding:12px 14px;
-    border-radius:6px;
-  }
 
   .yn-row{display:flex;gap:10px;}
   .yn-btn{
@@ -185,12 +184,12 @@
   .badge{
     display:inline-block;
     font-family:'IBM Plex Mono',monospace;
-    font-size:12px;
-    letter-spacing:0.08em;
+    font-size:13px;
+    letter-spacing:0.1em;
     text-transform:uppercase;
-    padding:5px 12px;
+    padding:6px 14px;
     border-radius:4px;
-    font-weight:500;
+    font-weight:600;
     margin-bottom:14px;
   }
   .badge.PROHIBITED{background:rgba(192,57,43,0.18);color:var(--prohibited);border:1px solid var(--prohibited);}
@@ -204,7 +203,7 @@
   .result-card.LIMITED{border-left-color:var(--limited);}
   .result-card.MINIMAL{border-left-color:var(--minimal);}
 
-  .tier-title{font-family:'Fraunces',serif;font-size:24px;font-weight:700;margin:0 0 8px;}
+  .tier-title{font-family:'Fraunces',serif;font-size:28px;font-weight:700;margin:0 0 10px;}
   .rule-cite{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);margin-bottom:12px;}
   .rule-cite-list{list-style:none;margin:0 0 12px;padding:0;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);}
   .rule-cite-list li{margin-bottom:4px;padding-left:14px;position:relative;}
@@ -251,7 +250,7 @@
   }
   @media print{
     body{background:#fff;color:#111;}
-    .progress, #trace, .actions, .scope-note, .privacy-note, .eyebrow{display:none !important;}
+    .progress, .step-label, #trace, .actions, .scope-note, .privacy-note, .eyebrow{display:none !important;}
     .card, .result-card{background:#fff;border:1px solid #999;color:#111;}
     .reg-status{background:#fff;border:1px solid #999;color:#111;}
     .footnote{background:#fff;border:1px solid #999;color:#111;}
@@ -272,6 +271,7 @@
     <div class="privacy-note">🔒 Nothing you enter leaves your browser — this tool runs entirely client-side. No data is transmitted, logged, or stored anywhere.</div>
   </header>
 
+  <div class="step-label" id="stepLabel"></div>
   <div class="progress" id="progress"></div>
   <div id="stepContainer" class="card"></div>
   <div id="trace"></div>
@@ -279,7 +279,7 @@
 
   <footer>
     <p>Not legal advice. A structured screen against the EU AI Act's public criteria — always confirm with qualified counsel before relying on a classification.</p>
-    <p style="margin-top:14px;">A personal AI-governance learning project — directed and specified by Amit, built hands-on with Claude (Anthropic). Not affiliated with any employer.</p>
+    <p style="margin-top:14px;">Personal project. Not affiliated with any employer.</p>
     <p style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;">Last updated: 3 September 2026</p>
   </footer>
 </div>
@@ -287,8 +287,11 @@
 <script>
 let WIZ = null;
 const STEPS = ['prohibited','safety','domain','carveout','transparency','result'];
+const STEP_LABELS = ['Prohibited Practices','Safety Component','Domain','Carve-out','Transparency'];
 let stepIndex = 0;
-let answers = { prohibited:{}, safety:null, domain:null, carveout:null, transparency:{} };
+let maxStepReached = 0;
+let traceEntries = [];
+let answers = { prohibited:{}, safety:null, domain:null, carveoutNarrow:null, carveoutProfiling:null, transparency:{} };
 
 fetch('wizard.json').then(r=>r.json()).then(data=>{
     WIZ = data;
@@ -308,20 +311,53 @@ function updateProgress(){
   const visibleSteps = STEPS.length - 1;
   for(let i=0;i<visibleSteps;i++){
     const dot = document.createElement('div');
-    dot.className = 'progress-dot' + (i<stepIndex?' done':i===stepIndex?' active':'');
+    const isClickable = i <= maxStepReached && i !== stepIndex;
+    dot.className = 'progress-dot' + (i<stepIndex?' done':i===stepIndex?' active':'') + (isClickable?' clickable':'');
+    if(isClickable){ dot.addEventListener('click', ()=>goTo(i)); }
     el.appendChild(dot);
   }
+  const isLast = stepIndex === visibleSteps - 1;
+  document.getElementById('stepLabel').textContent =
+    `Step ${stepIndex+1} of ${visibleSteps} · ${STEP_LABELS[stepIndex]}` + (isLast ? ' — last question' : '');
 }
 
 function addTrace(text, hit){
-  const el = document.getElementById('trace');
-  const div = document.createElement('div');
-  div.textContent = text;
-  div.className = hit ? 't-hit' : '';
-  el.appendChild(div);
+  traceEntries.push({ step: stepIndex, text, hit });
+  renderTrace();
 }
 
-function goTo(idx){ stepIndex = idx; render(); }
+function renderTrace(){
+  const el = document.getElementById('trace');
+  el.innerHTML = '';
+  traceEntries.forEach(e=>{
+    const div = document.createElement('div');
+    div.textContent = e.text;
+    div.className = e.hit ? 't-hit' : '';
+    el.appendChild(div);
+  });
+}
+
+function resetDownstream(field){
+  if(field === 'safety'){
+    answers.domain = null; answers.carveoutNarrow = null; answers.carveoutProfiling = null; answers.transparency = {};
+  }
+  if(field === 'domain'){
+    answers.carveoutNarrow = null; answers.carveoutProfiling = null; answers.transparency = {};
+  }
+  if(field === 'carveout'){
+    answers.transparency = {};
+  }
+}
+
+function goTo(idx){
+  if(idx < stepIndex){
+    traceEntries = traceEntries.filter(e => e.step < idx);
+    renderTrace();
+  }
+  stepIndex = idx;
+  if(idx > maxStepReached) maxStepReached = idx;
+  render();
+}
 
 function render(){
   if(!WIZ) return;
@@ -397,7 +433,7 @@ function render(){
         addTrace('> Article 6(1) check: not a regulated safety component', false);
         goTo(2);
       }
-    });
+    }, 'safety');
     document.getElementById('backBtn').addEventListener('click', ()=>goTo(0));
   }
 
@@ -405,19 +441,25 @@ function render(){
     c.innerHTML = `
       <div class="q-title">Which domain best describes this system's primary use?</div>
       <div class="q-cite">Annex III</div>
-      <select id="domainSelect">
-        <option value="">— select —</option>
-        ${WIZ.domains.map(d=>`<option value="${d.id}">${d.label}</option>`).join('')}
-      </select>
+      <div class="option-list">
+        ${WIZ.domains.map(d=>`
+          <label class="option" for="dom_${d.id}">
+            <input type="radio" name="domainRadio" id="dom_${d.id}" ${answers.domain===d.id?'checked':''}>
+            <span>${d.label}</span>
+          </label>`).join('')}
+      </div>
       <div class="actions">
         <button class="back" id="backBtn">Back</button>
-        <button class="next" id="nextBtn" disabled>Next</button>
+        <button class="next" id="nextBtn" ${answers.domain?'':'disabled'}>Next</button>
       </div>`;
-    const sel = document.getElementById('domainSelect');
     const nextBtn = document.getElementById('nextBtn');
-    if(answers.domain) sel.value = answers.domain;
-    nextBtn.disabled = !sel.value;
-    sel.addEventListener('change', ()=>{ answers.domain = sel.value; nextBtn.disabled = !sel.value; });
+    WIZ.domains.forEach(d=>{
+      document.getElementById('dom_'+d.id).addEventListener('change', ()=>{
+        if(answers.domain !== d.id) resetDownstream('domain');
+        answers.domain = d.id;
+        nextBtn.disabled = false;
+      });
+    });
     document.getElementById('backBtn').addEventListener('click', ()=>goTo(1));
     nextBtn.addEventListener('click', ()=>{
       if(answers.domain === 'NONE'){
@@ -433,25 +475,52 @@ function render(){
 
   else if(step === 'carveout'){
     c.innerHTML = `
-      <div class="q-title">${WIZ.carveout.label}</div>
-      <div class="q-cite">${WIZ.carveout.cite}</div>
+      <div class="q-title">${WIZ.carveoutNarrowTask.label}</div>
+      <div class="q-cite">${WIZ.carveoutNarrowTask.cite}</div>
       <div class="yn-row">
-        <button class="yn-btn" id="ynYes">Yes</button>
-        <button class="yn-btn" id="ynNo">No</button>
+        <button class="yn-btn" id="ynYes1">Yes</button>
+        <button class="yn-btn" id="ynNo1">No</button>
+      </div>
+      <div class="q-title" style="margin-top:22px;">${WIZ.carveoutProfiling.label}</div>
+      <div class="q-cite">${WIZ.carveoutProfiling.cite}</div>
+      <div class="yn-row">
+        <button class="yn-btn" id="ynYes2">Yes</button>
+        <button class="yn-btn" id="ynNo2">No</button>
       </div>
       <div class="actions">
         <button class="back" id="backBtn">Back</button>
         <button class="next" id="nextBtn" disabled>Next</button>
       </div>`;
-    setupYesNo('carveout', v=>{
+    const y1=document.getElementById('ynYes1'), n1=document.getElementById('ynNo1');
+    const y2=document.getElementById('ynYes2'), n2=document.getElementById('ynNo2');
+    const nextBtn=document.getElementById('nextBtn');
+    if(answers.carveoutNarrow===true) y1.classList.add('chosen');
+    if(answers.carveoutNarrow===false) n1.classList.add('chosen');
+    if(answers.carveoutProfiling===true) y2.classList.add('chosen');
+    if(answers.carveoutProfiling===false) n2.classList.add('chosen');
+    function updateNext(){
+      nextBtn.disabled = (answers.carveoutNarrow===null || answers.carveoutNarrow===undefined ||
+                           answers.carveoutProfiling===null || answers.carveoutProfiling===undefined);
+    }
+    updateNext();
+    y1.addEventListener('click', ()=>{ if(answers.carveoutNarrow!==true) resetDownstream('carveout'); answers.carveoutNarrow=true; y1.classList.add('chosen'); n1.classList.remove('chosen'); updateNext(); });
+    n1.addEventListener('click', ()=>{ if(answers.carveoutNarrow!==false) resetDownstream('carveout'); answers.carveoutNarrow=false; n1.classList.add('chosen'); y1.classList.remove('chosen'); updateNext(); });
+    y2.addEventListener('click', ()=>{ if(answers.carveoutProfiling!==true) resetDownstream('carveout'); answers.carveoutProfiling=true; y2.classList.add('chosen'); n2.classList.remove('chosen'); updateNext(); });
+    n2.addEventListener('click', ()=>{ if(answers.carveoutProfiling!==false) resetDownstream('carveout'); answers.carveoutProfiling=false; n2.classList.add('chosen'); y2.classList.remove('chosen'); updateNext(); });
+    document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
+    nextBtn.addEventListener('click', ()=>{
       const d = WIZ.domains.find(x=>x.id===answers.domain);
-      if(v){
-        addTrace('> Article 6(3) carve-out: narrow procedural task, no profiling — continuing checks', false);
+      const applies = answers.carveoutNarrow === true && answers.carveoutProfiling === false;
+      if(applies){
+        addTrace('> Article 6(3) carve-out: narrow task, no profiling — carve-out applies, continuing checks', false);
         goTo(4);
       } else {
-        addTrace('> Article 6(3) carve-out: does not apply', true);
+        const reasons = [];
+        if(answers.carveoutNarrow === false) reasons.push('does not qualify as a narrow procedural/verification task');
+        if(answers.carveoutProfiling === true) reasons.push('profiles individuals, which overrides any narrow-task exemption');
+        addTrace('> Article 6(3) carve-out: does not apply — ' + reasons.join('; '), true);
         finish({ tier:'HIGH', cite:d.cite, label:d.label,
-          reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.',
+          reasoning:`This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out (${reasons.join('; ')}). Expect conformity assessment, human oversight, and documentation obligations.`,
           footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.',
           footnote2: d.id === 'H4' ? '👥 Employment-specific (Article 26(7)): you must inform employee representatives and affected workers before deploying this system in the workplace — a separate obligation from the general human-oversight duty above.' : null,
           nextSteps:[
@@ -463,7 +532,6 @@ function render(){
           ] });
       }
     });
-    document.getElementById('backBtn').addEventListener('click', ()=>goTo(2));
   }
 
   else if(step === 'transparency'){
@@ -511,7 +579,7 @@ function render(){
   }
 }
 
-function setupYesNo(field, onDecide){
+function setupYesNo(field, onDecide, resetField){
   const yesBtn = document.getElementById('ynYes');
   const noBtn = document.getElementById('ynNo');
   const nextBtn = document.getElementById('nextBtn');
@@ -519,8 +587,14 @@ function setupYesNo(field, onDecide){
   if(choice === true) yesBtn.classList.add('chosen');
   if(choice === false) noBtn.classList.add('chosen');
   nextBtn.disabled = (choice === null || choice === undefined);
-  yesBtn.addEventListener('click', ()=>{ choice=true; answers[field]=true; yesBtn.classList.add('chosen'); noBtn.classList.remove('chosen'); nextBtn.disabled=false; });
-  noBtn.addEventListener('click', ()=>{ choice=false; answers[field]=false; noBtn.classList.add('chosen'); yesBtn.classList.remove('chosen'); nextBtn.disabled=false; });
+  yesBtn.addEventListener('click', ()=>{
+    if(resetField && answers[field] !== true) resetDownstream(resetField);
+    choice=true; answers[field]=true; yesBtn.classList.add('chosen'); noBtn.classList.remove('chosen'); nextBtn.disabled=false;
+  });
+  noBtn.addEventListener('click', ()=>{
+    if(resetField && answers[field] !== false) resetDownstream(resetField);
+    choice=false; answers[field]=false; noBtn.classList.add('chosen'); yesBtn.classList.remove('chosen'); nextBtn.disabled=false;
+  });
   nextBtn.addEventListener('click', ()=> onDecide(choice));
 }
 
@@ -530,7 +604,8 @@ function encodeAnswersToURL(){
   if(pIds.length) params.set('p', pIds.join(','));
   if(answers.safety !== null && answers.safety !== undefined) params.set('s', answers.safety ? '1':'0');
   if(answers.domain) params.set('d', answers.domain);
-  if(answers.carveout !== null && answers.carveout !== undefined) params.set('c', answers.carveout ? '1':'0');
+  if(answers.carveoutNarrow !== null && answers.carveoutNarrow !== undefined) params.set('cn', answers.carveoutNarrow ? '1':'0');
+  if(answers.carveoutProfiling !== null && answers.carveoutProfiling !== undefined) params.set('cp', answers.carveoutProfiling ? '1':'0');
   const tIds = WIZ.transparency.filter(t=>answers.transparency[t.id]).map(t=>t.id);
   if(tIds.length) params.set('t', tIds.join(','));
   const qs = params.toString();
@@ -543,7 +618,8 @@ function decodeAnswersFromURL(){
   (params.get('p')||'').split(',').filter(Boolean).forEach(id=> answers.prohibited[id] = true);
   if(params.has('s')) answers.safety = params.get('s') === '1';
   if(params.has('d')) answers.domain = params.get('d');
-  if(params.has('c')) answers.carveout = params.get('c') === '1';
+  if(params.has('cn')) answers.carveoutNarrow = params.get('cn') === '1';
+  if(params.has('cp')) answers.carveoutProfiling = params.get('cp') === '1';
   (params.get('t')||'').split(',').filter(Boolean).forEach(id=> answers.transparency[id] = true);
   return true;
 }
@@ -567,19 +643,27 @@ function computeOutcome(){
         'No separate Annex III / EU high-risk AI database registration applies to this path'
       ] };
   }
-  if(answers.domain && answers.domain !== 'NONE' && answers.carveout === false){
-    const d = WIZ.domains.find(x=>x.id===answers.domain);
-    return { tier:'HIGH', cite:d.cite, label:d.label,
-      reasoning:'This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out. Expect conformity assessment, human oversight, and documentation obligations.',
-      footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.',
-      footnote2: d.id === 'H4' ? '👥 Employment-specific (Article 26(7)): you must inform employee representatives and affected workers before deploying this system in the workplace — a separate obligation from the general human-oversight duty above.' : null,
-      nextSteps:[
-        'Establish a risk management system spanning the AI system\'s full lifecycle',
-        'Prepare technical documentation and maintain automatic logging',
-        'Design meaningful human oversight — someone with real authority and ability to intervene or stop the system',
-        'Complete conformity assessment and register the system in the EU high-risk AI database',
-        'If you are a public body, or the system assesses creditworthiness or insurance risk, you likely also need a Fundamental Rights Impact Assessment (FRIA) under Article 27 — a separate obligation from the conformity assessment above'
-      ] };
+  if(answers.domain && answers.domain !== 'NONE'){
+    const carveoutAnswered = (answers.carveoutNarrow !== null && answers.carveoutNarrow !== undefined &&
+                               answers.carveoutProfiling !== null && answers.carveoutProfiling !== undefined);
+    const applies = answers.carveoutNarrow === true && answers.carveoutProfiling === false;
+    if(carveoutAnswered && !applies){
+      const d = WIZ.domains.find(x=>x.id===answers.domain);
+      const reasons = [];
+      if(answers.carveoutNarrow === false) reasons.push('does not qualify as a narrow procedural/verification task');
+      if(answers.carveoutProfiling === true) reasons.push('profiles individuals, which overrides any narrow-task exemption');
+      return { tier:'HIGH', cite:d.cite, label:d.label,
+        reasoning:`This use case falls into an Annex III high-risk domain and does not qualify for the narrow-task carve-out (${reasons.join('; ')}). Expect conformity assessment, human oversight, and documentation obligations.`,
+        footnote:'⏱ Timeline note: the classification applies now, but under the EU\'s Digital Omnibus agreement, the compliance deadline for Annex III high-risk obligations was deferred to 2 December 2027.',
+        footnote2: d.id === 'H4' ? '👥 Employment-specific (Article 26(7)): you must inform employee representatives and affected workers before deploying this system in the workplace — a separate obligation from the general human-oversight duty above.' : null,
+        nextSteps:[
+          'Establish a risk management system spanning the AI system\'s full lifecycle',
+          'Prepare technical documentation and maintain automatic logging',
+          'Design meaningful human oversight — someone with real authority and ability to intervene or stop the system',
+          'Complete conformity assessment and register the system in the EU high-risk AI database',
+          'If you are a public body, or the system assesses creditworthiness or insurance risk, you likely also need a Fundamental Rights Impact Assessment (FRIA) under Article 27 — a separate obligation from the conformity assessment above'
+        ] };
+    }
   }
   const tHits = WIZ.transparency.filter(t=>answers.transparency[t.id]);
   if(tHits.length){
@@ -595,6 +679,7 @@ function computeOutcome(){
 function finish(outcome){
   document.getElementById('stepContainer').style.display = 'none';
   document.getElementById('progress').style.display = 'none';
+  document.getElementById('stepLabel').style.display = 'none';
   encodeAnswersToURL();
   const tierClass = outcome.tier;
   const tierName = {PROHIBITED:'Prohibited', HIGH:'High-Risk', LIMITED:'Limited Risk', MINIMAL:'Minimal Risk'}[tierClass];
@@ -620,7 +705,11 @@ function finish(outcome){
       <button class="print-btn" id="printBtn">Print / Save as PDF</button>
       <button class="print-btn" id="copyLinkBtn">Copy link to this result</button>
     </div>`;
-  document.getElementById('restartBtn').addEventListener('click', restart);
+  document.getElementById('restartBtn').addEventListener('click', ()=>{
+    if(confirm('This will clear all your answers and start a new assessment. Continue?')){
+      restart();
+    }
+  });
   document.getElementById('printBtn').addEventListener('click', ()=> window.print());
   document.getElementById('copyLinkBtn').addEventListener('click', ()=>{
     navigator.clipboard.writeText(window.location.href).then(()=>{
@@ -634,10 +723,13 @@ function finish(outcome){
 
 function restart(){
   stepIndex = 0;
-  answers = { prohibited:{}, safety:null, domain:null, carveout:null, transparency:{} };
+  maxStepReached = 0;
+  traceEntries = [];
+  answers = { prohibited:{}, safety:null, domain:null, carveoutNarrow:null, carveoutProfiling:null, transparency:{} };
   document.getElementById('trace').innerHTML = '';
   document.getElementById('stepContainer').style.display = 'block';
   document.getElementById('progress').style.display = 'flex';
+  document.getElementById('stepLabel').style.display = 'block';
   history.replaceState(null, '', window.location.pathname);
   render();
 }
